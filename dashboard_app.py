@@ -27,22 +27,69 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Global styling to match the blue analytics dashboard reference
+# Global styling to match the dark blue reference left filter bar
 st.markdown(
     """
     <style>
+    /* Overall background: darker navy gradient */
     [data-testid="stAppViewContainer"] {
-        background: radial-gradient(circle at top left, #274672 0%, #0c1b36 40%, #020617 100%);
+        background: radial-gradient(circle at top left, #1b2b4a 0%, #050b18 55%, #020309 100%);
     }
+    /* Header bar: slightly darker blue */
     [data-testid="stHeader"] {
-        background: linear-gradient(90deg, #0c1b36, #274672);
-    }
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0b1120 0%, #020617 100%);
+        background: linear-gradient(90deg, #15294b, #274a7b);
         color: #e5e7eb;
     }
-    [data-testid="stSidebar"] * {
+    /* Left filter panel: dark vertical bar */
+    .filter-panel {
+        background: linear-gradient(180deg, #1b3358, #091426);
+        border-radius: 12px;
+        padding: 16px 12px 20px 12px;
+        border: 1px solid #304c7a;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+        color: #e5e7eb;
+    }
+    .filter-panel h4 {
+        margin-top: 0;
+        margin-bottom: 0.75rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #e5e7eb;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+    /* Labels inside filter panel */
+    .filter-panel label {
         color: #e5e7eb !important;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 0.15rem;
+    }
+    /* Streamlit select boxes / text inputs inside filter panel */
+    .filter-panel [data-baseweb="select"] > div {
+        background-color: #15294b;
+        color: #e5e7eb;
+        border-radius: 6px;
+        border: 1px solid #4b6b9c;
+    }
+    .filter-panel [data-baseweb="select"] svg {
+        fill: #e5e7eb;
+    }
+    .filter-panel input {
+        background-color: #15294b;
+        color: #e5e7eb;
+        border-radius: 6px;
+        border: 1px solid #4b6b9c;
+    }
+    /* Glassmorphism panels for the three feature charts */
+    .glass-panel {
+        background: rgba(15, 23, 42, 0.92);
+        border-radius: 18px;
+        padding: 0.6rem 0.9rem 0.9rem 0.9rem;
+        border: 1px solid rgba(148, 163, 184, 0.6);
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
     }
     </style>
     """,
@@ -60,15 +107,15 @@ def kpi_card(label: str, value: str, help_text: str | None = None, key: str | No
         st.markdown(
             f"""
             <div style="
-                padding: 0.75rem 1rem;
-                border-radius: 0.6rem;
-                background: linear-gradient(135deg, #1e3a8a, #0f172a);
-                border: 1px solid rgba(191, 219, 254, 0.35);
+                padding: 0.9rem 1.1rem;
+                border-radius: 0.7rem;
+                background: linear-gradient(135deg, #d6ebfb, #c0def4);
+                border: 1px solid rgba(148, 163, 184, 0.4);
             ">
-                <div style="font-size: 0.8rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.08em;">
+                <div style="font-size: 0.8rem; color: #4b5563; text-transform: uppercase; letter-spacing: 0.08em;">
                     {label}
                 </div>
-                <div style="font-size: 1.5rem; font-weight: 600; color: #e5e7eb;">
+                <div style="font-size: 1.6rem; font-weight: 600; color: #0f172a;">
                     {value}
                 </div>
             </div>
@@ -80,18 +127,20 @@ def kpi_card(label: str, value: str, help_text: str | None = None, key: str | No
 
 
 def render_filters(df: pd.DataFrame) -> pd.DataFrame:
-    st.sidebar.markdown("### Filters")
+    st.markdown("#### Filters")
 
-    term = st.sidebar.selectbox("Term", options=["All"] + sorted(df["Term"].unique().tolist()))
-    dept = st.sidebar.selectbox("Department", options=["All"] + sorted(df["Dept_Code"].unique().tolist()))
-    publisher = st.sidebar.selectbox(
-        "Publisher", options=["All"] + sorted(df["Publisher"].unique().tolist())
+    term = st.selectbox("Term", options=["All"] + sorted(df["Term"].unique().tolist()), key="filter_term")
+    dept = st.selectbox(
+        "Department", options=["All"] + sorted(df["Dept_Code"].unique().tolist()), key="filter_dept"
     )
-    student_type = st.sidebar.selectbox(
-        "Student Type", options=["All"] + sorted(df["Student_Type"].unique().tolist())
+    publisher = st.selectbox(
+        "Publisher", options=["All"] + sorted(df["Publisher"].unique().tolist()), key="filter_publisher"
     )
-    fmt = st.sidebar.selectbox(
-        "Format", options=["All"] + sorted(df["Format"].unique().tolist())
+    student_type = st.selectbox(
+        "Student Type", options=["All"] + sorted(df["Student_Type"].unique().tolist()), key="filter_student_type"
+    )
+    fmt = st.selectbox(
+        "Format", options=["All"] + sorted(df["Format"].unique().tolist()), key="filter_format"
     )
 
     mask = pd.Series(True, index=df.index)
@@ -166,14 +215,6 @@ def render_price_sensitivity(df: pd.DataFrame):
         st.info("No data available for current filter selection.")
         return
 
-    threshold = st.slider(
-        "Rental-to-Retail Ratio Opt-Out Threshold",
-        min_value=0.4,
-        max_value=1.0,
-        value=0.7,
-        step=0.02,
-    )
-
     fig = px.scatter(
         df,
         x="Rental_to_Retail_Ratio",
@@ -183,15 +224,24 @@ def render_price_sensitivity(df: pd.DataFrame):
         opacity=0.7,
         color_discrete_sequence=px.colors.qualitative.Set2,
     )
-    fig.add_vline(x=threshold, line_dash="dash", line_color="red")
     fig.update_layout(
         height=320,
         margin=dict(l=0, r=0, t=10, b=0),
         xaxis_title="Rental-to-Retail Ratio",
         yaxis_title="Opt-Out Probability",
-        plot_bgcolor="#0b1630",
-        paper_bgcolor="#0b1630",
-        font=dict(color="#e5e7eb"),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#f9fafb"),
+        xaxis=dict(
+            tickfont=dict(color="#e5e7eb"),
+            gridcolor="rgba(148,163,184,0.25)",
+            zerolinecolor="rgba(148,163,184,0.4)",
+        ),
+        yaxis=dict(
+            tickfont=dict(color="#e5e7eb"),
+            gridcolor="rgba(148,163,184,0.25)",
+            zerolinecolor="rgba(148,163,184,0.4)",
+        ),
     )
 
     st.plotly_chart(fig, use_container_width=True)
@@ -214,9 +264,19 @@ def render_feature_importance():
         margin=dict(l=0, r=0, t=10, b=0),
         xaxis_title="Relative Importance",
         yaxis_title="Feature",
-        plot_bgcolor="#0b1630",
-        paper_bgcolor="#0b1630",
-        font=dict(color="#e5e7eb"),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#f9fafb"),
+        xaxis=dict(
+            tickfont=dict(color="#e5e7eb"),
+            gridcolor="rgba(148,163,184,0.25)",
+            zerolinecolor="rgba(148,163,184,0.4)",
+        ),
+        yaxis=dict(
+            tickfont=dict(color="#e5e7eb"),
+            gridcolor="rgba(148,163,184,0.0)",
+            zerolinecolor="rgba(148,163,184,0.0)",
+        ),
         coloraxis_showscale=False,
     )
     st.plotly_chart(fig, use_container_width=True)
@@ -246,9 +306,19 @@ def render_format_preference(df: pd.DataFrame):
         margin=dict(l=0, r=0, t=10, b=0),
         xaxis_title="Student Type",
         yaxis_title="Predicted Units",
-        plot_bgcolor="#0b1630",
-        paper_bgcolor="#0b1630",
-        font=dict(color="#e5e7eb"),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#f9fafb"),
+        xaxis=dict(
+            tickfont=dict(color="#e5e7eb"),
+            gridcolor="rgba(148,163,184,0.25)",
+            zerolinecolor="rgba(148,163,184,0.4)",
+        ),
+        yaxis=dict(
+            tickfont=dict(color="#e5e7eb"),
+            gridcolor="rgba(148,163,184,0.25)",
+            zerolinecolor="rgba(148,163,184,0.4)",
+        ),
     )
     st.plotly_chart(fig, use_container_width=True)
 
@@ -289,9 +359,9 @@ def render_funding_flow(df: pd.DataFrame):
     fig.update_layout(
         height=320,
         margin=dict(l=0, r=0, t=10, b=0),
-        font=dict(color="#e5e7eb"),
-        plot_bgcolor="#0b1630",
-        paper_bgcolor="#0b1630",
+        font=dict(color="#f9fafb"),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
     )
 
     st.plotly_chart(fig, use_container_width=True)
@@ -324,9 +394,9 @@ def render_risk_by_department(df: pd.DataFrame):
         margin=dict(l=0, r=0, t=10, b=0),
         xaxis_title="Department",
         yaxis_title="Avg Opt-Out Probability",
-        plot_bgcolor="#0b1630",
-        paper_bgcolor="#0b1630",
-        font=dict(color="#e5e7eb"),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#f9fafb"),
         coloraxis_showscale=False,
     )
     st.plotly_chart(fig, use_container_width=True)
@@ -362,27 +432,43 @@ def main():
 
     render_header()
     st.markdown("---")
+    
+    # Two-column layout: left filter bar, right main dashboard
+    filters_col, main_col = st.columns([0.9, 4.1])
 
-    render_top_kpis(df)
+    with filters_col:
+        st.markdown('<div class="filter-panel"><h4>Term & Segments</h4>', unsafe_allow_html=True)
+        filtered_df = render_filters(df)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("### Feature Engineering Pipeline & Key Indicators")
-    upper_left, upper_mid, upper_right = st.columns([1.2, 1.2, 1.0])
+    with main_col:
+        render_top_kpis(filtered_df)
 
-    with upper_left:
-        render_price_sensitivity(df)
-    with upper_mid:
-        render_feature_importance()
-    with upper_right:
-        render_format_preference(df)
+        st.markdown("### Feature Engineering Pipeline & Key Indicators")
+        # Three glassmorphism-style blocks, each containing one visual
+        upper_left, upper_mid, upper_right = st.columns(3)
 
-    st.markdown("### Procurement Planning & Strategy")
-    lower_left, lower_mid, lower_right = st.columns([1.4, 1.0, 1.0])
-    with lower_left:
-        render_funding_flow(df)
-    with lower_mid:
-        render_risk_by_department(df)
-    with lower_right:
-        render_recommendations(df)
+        with upper_left:
+            st.markdown('<div class="glass-panel">', unsafe_allow_html=True)
+            render_price_sensitivity(filtered_df)
+            st.markdown('</div>', unsafe_allow_html=True)
+        with upper_mid:
+            st.markdown('<div class="glass-panel">', unsafe_allow_html=True)
+            render_feature_importance()
+            st.markdown('</div>', unsafe_allow_html=True)
+        with upper_right:
+            st.markdown('<div class="glass-panel">', unsafe_allow_html=True)
+            render_format_preference(filtered_df)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown("### Procurement Planning & Strategy")
+        lower_left, lower_mid, lower_right = st.columns([1.4, 1.0, 1.0])
+        with lower_left:
+            render_funding_flow(filtered_df)
+        with lower_mid:
+            render_risk_by_department(filtered_df)
+        with lower_right:
+            render_recommendations(filtered_df)
 
 
 if __name__ == "__main__":
