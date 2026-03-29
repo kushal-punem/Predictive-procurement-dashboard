@@ -13,12 +13,54 @@ import os
 import pandas as pd
 import numpy as np
 
-def load_feature_table(data_dir: str = "new/Augmented", sample_frac: float = 0.05, seed: int = 42) -> pd.DataFrame:
+def load_master_data(data_dir: str = "new/Cleaned", load_all: bool = True) -> pd.DataFrame:
+    """
+    Load all CSV files from the Cleaned folder and create a single master dataframe.
+    
+    Parameters:
+    -----------
+    data_dir : str
+        Directory path containing the CSV files (default: "new/Cleaned")
+    load_all : bool
+        If True, load all data. If False, load a sample (default: True)
+    
+    Returns:
+    --------
+    pd.DataFrame
+        Master dataframe containing all data from all CSV files
+    """
+    file_pattern = os.path.join(data_dir, "*_frac.csv")
+    csv_files = sorted(glob.glob(file_pattern))
+    
+    if not csv_files:
+        raise FileNotFoundError(f"No CSV files found in {data_dir} matching pattern {file_pattern}")
+    
+    print(f"Found {len(csv_files)} CSV files to load...")
+    
+    dfs = []
+    for f in csv_files:
+        try:
+            df = pd.read_csv(f, engine='c')
+            print(f"  Loaded: {os.path.basename(f)} ({len(df)} rows)")
+            dfs.append(df)
+        except Exception as e:
+            print(f"  Error reading {f}: {e}")
+    
+    if not dfs:
+        raise ValueError("No CSV files could be loaded successfully")
+    
+    # Concatenate all dataframes into one master dataframe
+    master_df = pd.concat(dfs, ignore_index=True)
+    print(f"\nMaster dataframe created with {len(master_df)} total rows and {len(master_df.columns)} columns")
+    
+    return master_df
+
+def load_feature_table(data_dir: str = "new/Cleaned", sample_frac: float = 0.05, seed: int = 42) -> pd.DataFrame:
     """
     Load and map the augmented real dataset to the dashboard schema.
     Since the dataset is very large, sample_frac allows loading a subset to keep the dashboard responsive.
     """
-    file_pattern = os.path.join(data_dir, "*_balanced_dataset.csv")
+    file_pattern = os.path.join(data_dir, "*_frac.csv")
     csv_files = glob.glob(file_pattern)
     
     if not csv_files:
@@ -104,4 +146,4 @@ def load_feature_table(data_dir: str = "new/Augmented", sample_frac: float = 0.0
     
     return mapped_df
 
-__all__ = ["load_feature_table"]
+__all__ = ["load_master_data", "load_feature_table"]

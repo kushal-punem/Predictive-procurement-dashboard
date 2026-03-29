@@ -19,6 +19,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from etl_pipeline import load_feature_table
+# from count_student_purchase import count_student_purchases_fun 
 from feature_engine import train_model, apply_predictions
 
 st.set_page_config(
@@ -177,6 +178,7 @@ def render_top_kpis(df: pd.DataFrame):
     c1, c2, c3 = st.columns(3)
     with c1:
         kpi_card("Total Predicted Demand", f"{int(total_pred_units):,} Units")
+        
     with c2:
         kpi_card(
             "Digital vs Physical",
