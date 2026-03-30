@@ -10,6 +10,8 @@ from sklearn.ensemble import RandomForestClassifier
 def train_model(df: pd.DataFrame):
     """
     Train a RandomForest on the dataset to predict Actual_Purchase_Flag.
+    Uses sampling for efficiency on large datasets.
+    
     Returns:
         clf: Trained RandomForestClassifier
         fi: DataFrame with feature importances
@@ -28,8 +30,11 @@ def train_model(df: pd.DataFrame):
     
     if df.empty:
         return None, pd.DataFrame(columns=["Feature", "Importance"]), features
-        
+    
+    # Sample if dataset is large (for training speed)
     train_df = df.dropna(subset=features + [target])
+    if len(train_df) > 100000:
+        train_df = train_df.sample(n=100000, random_state=42)
     
     if len(train_df) < 50:
         default_fi = pd.DataFrame({"Feature": features, "Importance": [1.0/len(features)]*len(features)})
